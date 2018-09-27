@@ -1,0 +1,6 @@
+---
+name: elemental-set-config
+---
+Dynamic\ElementalSets\Model\ElementalSet:
+  extensions:
+    - DNADesign\Elemental\Extensions\ElementalPageExtension
