@@ -4,3 +4,9 @@ name: elemental-set-config
 Dynamic\ElementalSets\Model\ElementalSet:
   extensions:
     - DNADesign\Elemental\Extensions\ElementalPageExtension
+DNADesign\Elemental\Models\ElementalArea:
+  extensions:
+    - Dynamic\ElementalSets\Extensions\ElementalAreaExtension
+SilverStripe\CMS\Model\SiteTree:
+  extensions:
+    - Dynamic\ElementalSets\Extensions\ElementalSetSiteTreeExtension

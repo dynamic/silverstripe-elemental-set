@@ -6,6 +6,7 @@ use DNADesign\Elemental\Models\BaseElement;
 use SilverStripe\CMS\Model\RedirectorPage;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\CMS\Model\VirtualPage;
+use SilverStripe\Control\Controller;
 use SilverStripe\Dev\Debug;
 use SilverStripe\ErrorPage\ErrorPage;
 use SilverStripe\Forms\CheckboxField;
@@ -181,5 +182,13 @@ class ElementalSet extends DataObject
         }
 
         return $pages;
+    }
+
+    /**
+     * @return string
+     */
+    public function Link()
+    {
+        return Controller::curr()->Link();
     }
 }
