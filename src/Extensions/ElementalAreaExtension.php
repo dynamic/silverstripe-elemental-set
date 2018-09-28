@@ -58,7 +58,7 @@ class ElementalAreaExtension extends DataExtension
 
             if ($elementsFromSets->count()) {
                 foreach ($elementsFromSets as $setElement) {
-                    if ($elements->count() && !$nativeItems->find('ID', $setElement->ID) && in_array($setElement->ElementalArea, $activeAreas)) {
+                    if (!$nativeItems->find('ID', $setElement->ID) && in_array($setElement->ElementalArea, $activeAreas)) {
                         if ($setElement->AboveOrBelow == 'Above') {
                             $elements->unshift($setElement);
                         } else {
