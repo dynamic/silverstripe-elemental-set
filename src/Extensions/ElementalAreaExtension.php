@@ -53,7 +53,7 @@ class ElementalAreaExtension extends DataExtension
             }
         }
 
-        if ($currentPage->InheritElemenalSets) {
+        if ($currentPage->InheritElementalSets) {
             $elementsFromSets = $this->getElementsFromAppliedElementalSets($currentPage);
 
             if ($elementsFromSets->count()) {
@@ -106,7 +106,7 @@ class ElementalAreaExtension extends DataExtension
     {
         $list = ArrayList::create();
 
-        if (!$page->InheritElemenalSets) {
+        if (!$page->InheritElementalSets) {
             return $list;
         }
 
