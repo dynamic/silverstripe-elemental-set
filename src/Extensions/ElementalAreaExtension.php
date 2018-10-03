@@ -27,6 +27,9 @@ class ElementalAreaExtension extends DataExtension
      */
     public function SetsElementControllers()
     {
+        // Don't worry about elemental sets building their own list
+        if ($this->owner->OwnerClassName == ElementalSet::class) return ArrayList::create();
+
         // Don't try and process unsaved lists
         if ($this->owner->Elements() instanceof UnsavedRelationList) {
             return ArrayList::create();
@@ -42,13 +45,14 @@ class ElementalAreaExtension extends DataExtension
         $elements->merge($nativeItems);
 
         $currentPage = Controller::curr()->data();
+        $blackList = (array)$currentPage->config()->get('black_list_areas');
         $areaCheck = $currentPage->getElementalRelations();
         $activeAreas = [];
 
         if (count($areaCheck)) {
             foreach ($areaCheck as $area) {
-                if ($currentPage->$area() && $currentPage->$area()->ID == $this->owner->ID) {
-                    $activeAreas[$area] = $area;
+                if ($currentPage->$area() && !in_array($area, $blackList)) {
+                    $activeAreas[$area] = $currentPage->$area()->ID;
                 }
             }
         }
@@ -58,7 +62,7 @@ class ElementalAreaExtension extends DataExtension
 
             if ($elementsFromSets->count()) {
                 foreach ($elementsFromSets as $setElement) {
-                    if (!$nativeItems->find('ID', $setElement->ID) && in_array($setElement->ElementalArea, $activeAreas)) {
+                    if (array_key_exists($setElement->ElementalArea, $activeAreas) && $activeAreas[$setElement->ElementalArea] == $this->owner->ID) {
                         if ($setElement->AboveOrBelow == 'Above') {
                             $elements->unshift($setElement);
                         } else {
@@ -69,7 +73,7 @@ class ElementalAreaExtension extends DataExtension
             }
         }
 
-        if (!is_null($elements)) {
+        if ($elements->exists()) {
             foreach ($elements as $element) {
                 $controller = $element->getController();
                 $controllers->push($controller);
@@ -121,7 +125,7 @@ class ElementalAreaExtension extends DataExtension
                 } else {
                     if (count($ancestors)) {
                         foreach ($ancestors as $ancestor) {
-                            if (in_array($ancestors, $restrictedToParentIDs)) {
+                            if (in_array($ancestor, $restrictedToParentIDs)) {
                                 $list->add($set);
                                 continue;
                             }
