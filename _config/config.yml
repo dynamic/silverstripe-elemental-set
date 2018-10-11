@@ -10,3 +10,6 @@ DNADesign\Elemental\Models\ElementalArea:
 SilverStripe\CMS\Model\SiteTree:
   extensions:
     - Dynamic\ElementalSets\Extensions\ElementalSetSiteTreeExtension
+DNADesign\Elemental\Models\BaseElement:
+  extensions:
+    - Dynamic\ElementalSets\Extensions\BaseElementDataExtension
