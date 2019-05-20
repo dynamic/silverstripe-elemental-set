@@ -114,7 +114,7 @@ class ElementalAreaExtension extends DataExtension
             return $list;
         }
 
-        $sets = ElementalSet::get()->where("(PageTypesValue IS NULL) OR (PageTypesValue LIKE '%:\"{$page->ClassName}%')");
+        $sets = ElementalSet::get()->where("(PageTypesValue IS NULL) OR (PageTypesValue LIKE '%:{$page->ClassName}%')");
         $ancestors = $page->getAncestors()->column('ID');
 
         foreach ($sets as $set) {
@@ -132,8 +132,6 @@ class ElementalAreaExtension extends DataExtension
                         }
                     }
                 }
-            } else {
-                $list->add($set);
             }
         }
 
