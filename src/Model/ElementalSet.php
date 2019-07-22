@@ -2,18 +2,15 @@
 
 namespace Dynamic\ElementalSets\Model;
 
-use DNADesign\Elemental\Models\BaseElement;
 use SilverStripe\CMS\Model\RedirectorPage;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\CMS\Model\VirtualPage;
 use SilverStripe\Control\Controller;
-use SilverStripe\Dev\Debug;
 use SilverStripe\ErrorPage\ErrorPage;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
-use SilverStripe\Forms\GridField\GridFieldAddNewButton;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\TextField;
@@ -29,6 +26,14 @@ use Symbiote\MultiValueField\ORM\FieldType\MultiValueField;
 /**
  * Class ElementalSet
  * @package Dynamic\ElementalSets\Model
+ *
+ * @property string Title
+ * @property array PageTypes
+ * @property boolean IncludePageParent
+ *
+ * @method \SilverStripe\ORM\ManyManyList PageParents()
+ *
+ * @mixin Versioned
  */
 class ElementalSet extends DataObject
 {
@@ -102,18 +107,23 @@ class ElementalSet extends DataObject
                         ->setTitle(_t("{$this->ClassName}.Title", 'Title')),
                     MultiValueCheckboxField::create('PageTypes')
                         ->setTitle(_t("{$this->ClassName}.OnlyApplyToThesePageTypes", 'Only apply to these page types'))
-                        ->setDescription(_t("{$this->ClassName}.OnlyApplyToThesePageTypesDescription", 'Selected Page Types will inherit this Element Set automatically. Leave all unchecked to apply to all page types.'))
+                        ->setDescription(_t("{$this->ClassName}.OnlyApplyToThesePageTypesDescription",
+                            'Selected Page Types will inherit this Element Set automatically. Leave all unchecked to apply to all page types.'))
                         ->setSource($this->pageTypeOptions()),
                     TreeMultiselectField::create('PageParents')
-                        ->setTitle(_t("{$this->ClassName}.OnlyApplyToChildrenOfThesePages", 'Only apply to children of these Pages:'))
+                        ->setTitle(_t("{$this->ClassName}.OnlyApplyToChildrenOfThesePages",
+                            'Only apply to children of these Pages:'))
                         ->setSourceObject(SiteTree::class),
                     CheckboxField::create('IncludePageParent')
-                        ->setTitle(_t("{$this->ClassName}.ApplyBlockSetToSelectedPageParentsAsWellAsChildren", 'Apply elemental set to selected page parents as well as children')),
+                        ->setTitle(_t("{$this->ClassName}.ApplyBlockSetToSelectedPageParentsAsWellAsChildren",
+                            'Apply elemental set to selected page parents as well as children')),
                 ]
             );
 
             if (!$this->exists()) {
-                $fields->addFieldToTab('Root.Main', LiteralField::create('NotSaved', "<p class='message warning'>" . _t("{$this->ClassName}.YouCanAddElementsToThisSetOnceYouHaveSavedIt", 'You can add Elements to this set once you have saved it for the first time') . '</p>'));
+                $fields->addFieldToTab('Root.Main', LiteralField::create('NotSaved',
+                    "<p class='message warning'>" . _t("{$this->ClassName}.YouCanAddElementsToThisSetOnceYouHaveSavedIt",
+                        'You can add Elements to this set once you have saved it for the first time') . '</p>'));
             }
 
             $fields->removeByName('Elements');
@@ -128,7 +138,10 @@ class ElementalSet extends DataObject
             $addElement = $config->getComponentByType(GridFieldAddNewMultiClass::class);
             $addElement = $addElement->setFragment('toolbar-header-right');
 
-            $config->removeComponentsByType([GridFieldAddExistingAutocompleter::class, GridFieldAddNewMultiClass::class])
+            $config->removeComponentsByType([
+                GridFieldAddExistingAutocompleter::class,
+                GridFieldAddNewMultiClass::class
+            ])
                 ->addComponent(new GridFieldAddExistingSearchButton('toolbar-header-left'))
                 ->addComponent($addElement);
         }
