@@ -106,6 +106,10 @@ class ElementalAreaExtension extends DataExtension
         return $elements;
     }
 
+    /**
+     * @param \SilverStripe\CMS\Model\SiteTree|\Dynamic\ElementalSets\Extensions\ElementalSetSiteTreeExtension $page
+     * @return \SilverStripe\ORM\ArrayList
+     */
     protected function getAppliedSets($page)
     {
         $list = ArrayList::create();
@@ -118,6 +122,10 @@ class ElementalAreaExtension extends DataExtension
         $ancestors = $page->getAncestors()->column('ID');
 
         foreach ($sets as $set) {
+            if ($this->isDisabledSet($set, $page)) {
+                continue;
+            }
+            
             $restrictedToParentIDs = $set->PageParents()->column('ID');
             if (count($restrictedToParentIDs)) {
                 if ($set->IncludePageParent && in_array($page->ID, $restrictedToParentIDs)) {
@@ -136,5 +144,20 @@ class ElementalAreaExtension extends DataExtension
         }
 
         return $list;
+    }
+
+    /**
+     * @param $set
+     * @param $page
+     * @return bool
+     */
+    protected function isDisabledSet($set, $page)
+    {
+        foreach ($page->DisabledSets() as $disabledSet) {
+            if ($set->ID === $disabledSet->ID) {
+                return true;
+            }
+        }
+        return false;
     }
 }
