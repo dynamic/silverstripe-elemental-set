@@ -17,6 +17,7 @@ use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\TreeMultiselectField;
 use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\Hierarchy\Hierarchy;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\GridFieldExtensions\GridFieldAddExistingSearchButton;
 use Symbiote\GridFieldExtensions\GridFieldAddNewMultiClass;
@@ -57,6 +58,7 @@ class ElementalSet extends DataObject
      */
     private static $extensions = [
         Versioned::class,
+        Hierarchy::class,
     ];
 
     /**
