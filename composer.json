@@ -16,7 +16,8 @@
   "require": {
     "dnadesign/silverstripe-elemental": "^2@dev || ^3@dev",
     "silverstripe/recipe-cms": "^1@dev || ^4@dev",
-    "silverstripe/vendor-plugin": "^1@dev"
+    "silverstripe/vendor-plugin": "^1@dev",
+    "symbiote/silverstripe-multivaluefield": "^5.0"
   },
   "require-dev": {
     "phpunit/PHPUnit": "^5.7",
@@ -37,5 +38,4 @@
     "branch-alias": {
       "dev-master": "1.0.x-dev"
     }
-  }
 }
