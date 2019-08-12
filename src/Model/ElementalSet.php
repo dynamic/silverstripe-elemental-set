@@ -2,37 +2,27 @@
 
 namespace Dynamic\ElementalSets\Model;
 
-use SilverStripe\CMS\Model\RedirectorPage;
-use SilverStripe\CMS\Model\SiteTree;
-use SilverStripe\CMS\Model\VirtualPage;
+use DNADesign\Elemental\Extensions\ElementalAreasExtension;
+use DNADesign\Elemental\Forms\ElementalAreaField;
+use DNADesign\Elemental\Models\BaseElement;
+use DNADesign\Elemental\Models\ElementalArea;
+use SilverStripe\CMS\Controllers\CMSPageEditController;
 use SilverStripe\Control\Controller;
-use SilverStripe\ErrorPage\ErrorPage;
-use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Control\Director;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Dev\Debug;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\GridField\GridField;
-use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
-use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\TextField;
-use SilverStripe\Forms\TreeMultiselectField;
-use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\Hierarchy\Hierarchy;
 use SilverStripe\Versioned\Versioned;
-use Symbiote\GridFieldExtensions\GridFieldAddExistingSearchButton;
-use Symbiote\GridFieldExtensions\GridFieldAddNewMultiClass;
-use Symbiote\MultiValueField\Fields\MultiValueCheckboxField;
-use Symbiote\MultiValueField\ORM\FieldType\MultiValueField;
 
 /**
  * Class ElementalSet
  * @package Dynamic\ElementalSets\Model
  *
  * @property string Title
- * @property array PageTypes
- * @property boolean IncludePageParent
- *
- * @method \SilverStripe\ORM\ManyManyList PageParents()
  *
  * @mixin Versioned
  */
@@ -58,7 +48,7 @@ class ElementalSet extends DataObject
      */
     private static $extensions = [
         Versioned::class,
-        Hierarchy::class,
+        //ElementalAreasExtension::class,
     ];
 
     /**
@@ -66,23 +56,27 @@ class ElementalSet extends DataObject
      */
     private static $db = [
         'Title' => 'Varchar(255)',
-        'PageTypes' => MultiValueField::class,
-        'IncludePageParent' => 'Boolean',
     ];
 
     /**
      * @var array
      */
-    private static $many_many = [
-        'PageParents' => SiteTree::class,
+    private static $has_one = [
+        'ElementalArea' => ElementalArea::class,
     ];
 
     /**
      * @var array
      */
-    private static $above_or_below_options = [
-        'Above' => 'Above Page Elements',
-        'Below' => 'Below Page Elements',
+    private static $owns = [
+        'ElementalArea',
+    ];
+
+    /**
+     * @var array
+     */
+    private static $cascade_duplicates = [
+        'ElementalArea',
     ];
 
     /**
@@ -104,21 +98,8 @@ class ElementalSet extends DataObject
             $fields->addFieldsToTab(
                 'Root.Main',
                 [
-                    HeaderField::create('SettingsHeading', _t("{$this->ClassName}.Settings", 'Settings')),
                     TextField::create('Title')
                         ->setTitle(_t("{$this->ClassName}.Title", 'Title')),
-                    MultiValueCheckboxField::create('PageTypes')
-                        ->setTitle(_t("{$this->ClassName}.OnlyApplyToThesePageTypes", 'Only apply to these page types'))
-                        ->setDescription(_t("{$this->ClassName}.OnlyApplyToThesePageTypesDescription",
-                            'Selected Page Types will inherit this Element Set automatically. Leave all unchecked to apply to all page types.'))
-                        ->setSource($this->pageTypeOptions()),
-                    TreeMultiselectField::create('PageParents')
-                        ->setTitle(_t("{$this->ClassName}.OnlyApplyToChildrenOfThesePages",
-                            'Only apply to children of these Pages:'))
-                        ->setSourceObject(SiteTree::class),
-                    CheckboxField::create('IncludePageParent')
-                        ->setTitle(_t("{$this->ClassName}.ApplyBlockSetToSelectedPageParentsAsWellAsChildren",
-                            'Apply elemental set to selected page parents as well as children')),
                 ]
             );
 
@@ -128,28 +109,82 @@ class ElementalSet extends DataObject
                         'You can add Elements to this set once you have saved it for the first time') . '</p>'));
             }
 
-            $fields->removeByName('Elements');
+            $fields->removeByName('ElementalAreaID');
+
+            if ($this->exists()) {
+                $area = ElementalAreaField::create('ElementalArea', $this->ElementalArea(), $this->getElementalTypes());
+
+                $fields->addFieldToTab('Root.Main', $area);
+            }
         });
 
         $fields = parent::getCMSFields();
 
-        $elements = $fields->dataFieldByName('ElementalArea');
+        //$elements = $fields->dataFieldByName('ElementalArea');
 
-        if ($elements instanceof GridField) {
+        /*if ($elements instanceof GridField) {
             $config = $elements->getConfig();
-            $addElement = $config->getComponentByType(GridFieldAddNewMultiClass::class);
-            $addElement = $addElement->setFragment('toolbar-header-right');
+            //$addElement = $config->getComponentByType(GridFieldAddNewMultiClass::class);
+            //$addElement = $addElement->setFragment('toolbar-header-right');
 
             $config->removeComponentsByType([
                 GridFieldAddExistingAutocompleter::class,
-                GridFieldAddNewMultiClass::class
+                GridFieldAddNewMultiClass::class,
             ])
                 ->addComponent(new GridFieldAddExistingSearchButton('toolbar-header-left'))
                 ->addComponent($addElement);
-        }
+        }*/
 
         return $fields;
     }
+
+    public function getElementalTypes()
+    {
+        $config = $this->config();
+
+        if (is_array($config->get('allowed_elements'))) {
+            if ($config->get('stop_element_inheritance')) {
+                $availableClasses = $config->get('allowed_elements', Config::UNINHERITED);
+            } else {
+                $availableClasses = $config->get('allowed_elements');
+            }
+        } else {
+            $availableClasses = ClassInfo::subclassesFor(BaseElement::class);
+        }
+
+        if ($config->get('stop_element_inheritance')) {
+            $disallowedElements = (array) $config->get('disallowed_elements', Config::UNINHERITED);
+        } else {
+            $disallowedElements = (array) $config->get('disallowed_elements');
+        }
+        $list = [];
+
+        foreach ($availableClasses as $availableClass) {
+            /** @var BaseElement $inst */
+            $inst = singleton($availableClass);
+
+            if (!in_array($availableClass, $disallowedElements) && $inst->canCreate()) {
+                if ($inst->hasMethod('canCreateElement') && !$inst->canCreateElement()) {
+                    continue;
+                }
+
+                $list[$availableClass] = $inst->getType();
+            }
+        }
+
+        if ($config->get('sort_types_alphabetically') !== false) {
+            asort($list);
+        }
+
+        if (isset($list[BaseElement::class])) {
+            unset($list[BaseElement::class]);
+        }
+
+        $this->invokeWithExtensions('updateAvailableTypesForClass', $class, $list);
+
+        return $list;
+    }
+
 
     /**
      * @return mixed
@@ -160,50 +195,33 @@ class ElementalSet extends DataObject
     }
 
     /**
-     * @return array
-     */
-    protected function pageTypeOptions()
-    {
-        $pageTypes = [];
-        $classes = ArrayLib::valuekey(SiteTree::page_type_classes());
-
-        unset($classes[VirtualPage::class]);
-        unset($classes[ErrorPage::class]);
-        unset($classes[RedirectorPage::class]);
-
-        foreach ($classes as $class) {
-            $pageTypes[$class] = $class::singleton()->i18n_singular_name();
-        }
-
-        asort($pageTypes);
-
-        return $pageTypes;
-    }
-
-    /**
-     * @return \SilverStripe\ORM\DataList
-     */
-    public function Pages()
-    {
-        $pages = SiteTree::get();
-        $types = $this->PageTypes->getValue();
-        if (count($types)) {
-            $pages = $pages->filter('ClassName', $types);
-        }
-
-        $parents = $this->PageParents()->column();
-        if (count($parents)) {
-            $pages = $pages->filter('ParentID', $parents);
-        }
-
-        return $pages;
-    }
-
-    /**
+     * Generates a link to edit this page in the CMS.
+     *
      * @return string
      */
-    public function Link()
+    public function CMSEditLink()
     {
-        return Controller::curr()->Link();
+        $link = Controller::join_links(
+            Controller::curr()->Link('show'),
+            $this->ID
+        );
+
+        return Director::absoluteURL($link);
     }
+
+    /**
+     * @param null $action
+     * @return string
+     */
+    public function Link($action = null)
+    {
+        return Controller::curr()->Link($action);
+    }
+
+    public function inlineEditable()
+    {
+        return false;
+    }
+
+
 }
