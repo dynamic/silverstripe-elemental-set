@@ -2,6 +2,7 @@
 
 namespace Dynamic\ElementalSets\Model;
 
+use DNADesign\Elemental\Models\ElementalArea;
 use SilverStripe\CMS\Model\RedirectorPage;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\CMS\Model\VirtualPage;
@@ -205,5 +206,41 @@ class ElementalSet extends DataObject
     public function Link()
     {
         return Controller::curr()->Link();
+    }
+
+    /**
+     * @return string
+     */
+    public function CMSEditLink(): string
+    {
+        return Controller::join_links(
+            'admin',
+            'elemental-sets-admin',
+            'Dynamic-ElementalSets-Model-ElementalSet',
+            'EditForm',
+            'field',
+            'Dynamic-ElementalSets-Model-ElementalSet',
+            'item',
+            $this->ID,
+            'edit'
+        );
+    }
+
+    /**
+     * Retrieve a elemental area relation name which this element owns
+     *
+     * @return string
+     */
+    public function getOwnedAreaRelationName(): string
+    {
+        $has_one = $this->getOwner()->config()->get('has_one');
+
+        foreach ($has_one as $relationName => $relationClass) {
+            if ($relationClass === ElementalArea::class && $relationName !== 'Parent') {
+                return $relationName;
+            }
+        }
+
+        return 'Elements';
     }
 }
